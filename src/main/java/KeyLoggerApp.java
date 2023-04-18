@@ -3,6 +3,8 @@ import com.github.kwhat.jnativehook.NativeHookException;
 import com.github.kwhat.jnativehook.dispatcher.SwingDispatchService;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
+import com.github.kwhat.jnativehook.mouse.NativeMouseEvent;
+import com.github.kwhat.jnativehook.mouse.NativeMouseListener;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -11,7 +13,7 @@ import java.util.Arrays;
 
 import javax.swing.*;
 
-public class KeyLoggerApp extends JFrame implements NativeKeyListener {
+public class KeyLoggerApp extends JFrame implements NativeKeyListener, NativeMouseListener {
 
     private static final long serialVersionUID = 1L;
 
@@ -28,6 +30,7 @@ public class KeyLoggerApp extends JFrame implements NativeKeyListener {
     boolean eCooldown = false;
     boolean keyPressCooldown = false;
     boolean charIsActive = false;
+    boolean isHold = false;
     SoundPlayer player;
 
     public KeyLoggerApp() {
@@ -83,44 +86,30 @@ public class KeyLoggerApp extends JFrame implements NativeKeyListener {
 
         GlobalScreen.setEventDispatcher(new SwingDispatchService());
         GlobalScreen.addNativeKeyListener(this);
+        GlobalScreen.addNativeMouseListener(this);
     }
 
     private void startListening() {
-//        // Get the selected key from the dropdown menu
-//        selectedKey = (String) keyDropdown.getSelectedItem();
-//
-//        // Update the status label
-//        statusLabel.setText("Listening for key " + selectedKey);
-//
-//        // Set the listening flag to true
-//        listening = true;
-//
-//        // Add key bindings for Q, E, and LMB
-//        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
-//            public boolean dispatchKeyEvent(KeyEvent event) {
-//                if (event.getID() == KeyEvent.KEY_PRESSED) {
-//                    setPressCooldown();
-//                    if (String.valueOf(event.getKeyChar()).equals(selectedKey)) {
-//                        // Log the selected key press
-//                        System.out.println("Slot " + selectedKey + " selected");
-//                        charIsActive = true;
-//
-//                        // Remove the key binding for the selected key
-//                        KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this);
-//
-//                        // Start listening for Q, E, and LMB
-//                        startListeningForQELMB();
-//                    } else if (!String.valueOf(event.getKeyChar()).equals(selectedKey) && slotKeys.contains(event.getKeyChar() + "")) {
-//                        // Stop listening for all keys if a different key is pressed and the dropdown menu is closed
-//                        System.out.println("Switched to another slot");
-//                        charIsActive = false;
-//                        stopListeningForQELMB();
-//                        startListening();
-//                    }
-//                }
-//                return false;
-//            }
-//        });
+        listening = true;
+    }
+
+    public void nativeMouseClicked(NativeMouseEvent e) {
+        System.out.println("Mouse Clicked: " + e.getClickCount());
+        System.out.println("Mouse: " + e.getButton());
+        int mouse = e.getButton();
+        if (mouse == 1 && !isHold && charIsActive) {
+            int click = e.getClickCount();
+            if (click > 5) {
+                click = 1;
+            }
+            System.out.println("attack" + click);
+            player.playRandomAttackLine(click);
+        } else if (mouse == 1 && isHold && charIsActive) {
+            System.out.println("hold");
+            player.playRandomHoldLine();
+        } else if (mouse == 2 && charIsActive) {
+            player.playRandomSprintLine();
+        }
     }
 
     public void nativeKeyPressed(NativeKeyEvent event) {
@@ -186,93 +175,14 @@ public class KeyLoggerApp extends JFrame implements NativeKeyListener {
                         }
                     }).start();
                 }
+            } else if (NativeKeyEvent.getKeyText(event.getKeyCode()).equals("R") && charIsActive) {
+                isHold = !isHold;
+                System.out.println("Hold active: " + isHold);
+            } else if (event.getKeyCode() == 57 && charIsActive) { //space
+                player.playRandomJumpLine();
             }
         }
     }
-
-    private void startListeningForQELMB() {
-//        // Update the status label
-//        statusLabel.setText("Listening for Q, E, and LMB");
-//
-//        // Add key bindings for Q and E
-//        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
-//            public boolean dispatchKeyEvent(KeyEvent event) {
-//                if (event.getID() == KeyEvent.KEY_PRESSED) {
-//                    setPressCooldown();
-//                    if (event.getKeyCode() == KeyEvent.VK_Q) {
-//                        if (qCooldown) {
-//                            // Cooldown is active, return without logging
-//                            System.out.println("Q is on cooldown");
-//                            return false;
-//                        }
-//                        if (!charIsActive) {
-//                            System.out.println("Character is not active");
-//                            return false;
-//                        }
-//                        // Log the Q key press
-//                        System.out.println("Q key pressed");
-//                        player.playRandomBurstLine();
-//
-//                        // Set the qCooldown flag to true and start the cooldown timer
-//                        qCooldown = true;
-//                        new Timer(12000, new ActionListener() {
-//                            public void actionPerformed(ActionEvent e) {
-//                                qCooldown = false;
-//                            }
-//                        }).start();
-//                    } else if (event.getKeyCode() == KeyEvent.VK_E) {
-//                        if (eCooldown) {
-//                            // Cooldown is active, return without logging
-//                            System.out.println("E is on cooldown");
-//                            return false;
-//                        }
-//                        if (!charIsActive) {
-//                            System.out.println("Character is not active");
-//                            return false;
-//                        }
-//                        // Log the E key press
-//                        System.out.println("E key pressed");
-//                        player.playRandomSkillLine();
-//
-//                        // Set the eCooldown flag to true and start the cooldown timer
-//                        eCooldown = true;
-//                        new Timer(12000, new ActionListener() {
-//                            public void actionPerformed(ActionEvent e) {
-//                                eCooldown = false;
-//                            }
-//                        }).start();
-//                    } else if (!String.valueOf(event.getKeyChar()).equals(selectedKey) && slotKeys.contains(event.getKeyChar() + "")) {
-//                        // Stop listening for Q, E, and LMB if a different key is pressed
-//                        System.out.println("Switched to another slot");
-//                        stopListeningForQELMB();
-//                        charIsActive = false;
-//
-//                        // Start listening for the selected key again
-//                        startListening();
-//                    }
-//                }
-//                return false;
-//            }
-//        });
-//
-//        // Add a mouse listener to the JFrame to detect LMB clicks
-//        addMouseListener(new MouseAdapter() {
-//            public void mouseClicked(MouseEvent e) {
-//                if (e.getButton() == MouseEvent.BUTTON1) {
-//                    System.out.println("LMB clicked");
-//                } else if (e.getButton() == MouseEvent.BUTTON2) {
-//                    System.out.println("RMB clicked");
-//                }
-//            }
-//        });
-    }
-
-
-    private void stopListeningForQELMB() {
-        KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this.dispatcher);
-        statusLabel.setText("Not listening");
-    }
-
 
     private void stopListening() {
         // Update the status label
